@@ -41,6 +41,7 @@ namespace GrabMan
         double secondsPerFrame;
         int spritesInSheet;
         int widthOfSingleSprite;
+        private Vector2 position; //duct-tape solution for delta time movement.
 
         public Powerup Held { get; set; }
         /// <summary>
@@ -63,9 +64,9 @@ namespace GrabMan
         /// <param name="box">Represents the player's position in space</param>
         /// <param name="speed">The "base speed" of the player (5 pixels per frame by default)</param>
         /// <param name="spritesInSheet">Number of individual sprites within the sprite sheet</param>
-        public Player(Texture2D texture, Rectangle box, int spritesInSheet, int speed = 5) : base(texture, box)
+        public Player(Texture2D texture, Rectangle box, int spritesInSheet, int speed = 250) : base(texture, box)
         {
-            Speed = speed;
+            Speed = speed; position = new Vector2(box.X, box.Y);
             this.spritesInSheet = spritesInSheet;
             this.widthOfSingleSprite = texture.Width / spritesInSheet;
             secondsPerFrame = 1.0f / Game1.fps;
@@ -81,9 +82,9 @@ namespace GrabMan
         /// <param name="y">The starting y position of the player</param>
         /// <param name="spritesInSheet">Number of individual sprites within the sprite sheet</param>
         /// <param name="speed">The "base speed" of the player (5 pixels per frame by default)</param>
-        public Player(Texture2D texture, int x, int y, int spritesInSheet, int speed = 5) : base(texture)
+        public Player(Texture2D texture, int x, int y, int spritesInSheet, int speed = 250) : base(texture)
         {
-            Speed = speed;
+            Speed = speed; position = new Vector2(x, y);
             this.spritesInSheet = spritesInSheet;
             this.widthOfSingleSprite = texture.Width / spritesInSheet;
             secondsPerFrame = 1.0f / Game1.fps;
@@ -109,7 +110,8 @@ namespace GrabMan
                         CurrentState = PlayerStates.WalkRight;
                         break;
                     case PlayerStates.WalkRight:
-                        X += Speed;
+                        //X += Speed;
+                        position.X += Speed * LevelManager.DeltaTime;
                         break;
                     case PlayerStates.FaceLeft:
                     case PlayerStates.WalkLeft:
@@ -128,7 +130,8 @@ namespace GrabMan
                         CurrentState = PlayerStates.WalkLeft;
                         break;
                     case PlayerStates.WalkLeft:
-                        X -= Speed;
+                        //X -= Speed;
+                        position.X -= Speed * LevelManager.DeltaTime;
                         break;
                 }
             } else if(direction.HasFlag(InputDirection.None))
@@ -141,26 +144,28 @@ namespace GrabMan
             {
                 if (CurrentState == PlayerStates.FaceRight) { CurrentState = PlayerStates.WalkRight; }
                 else if(CurrentState == PlayerStates.FaceLeft) { CurrentState = PlayerStates.WalkLeft; }
-                Y -= Speed;
-                if (Y < 0) { Y = 0; }
+                //Y -= Speed;
+                position.Y -= Speed * LevelManager.DeltaTime;
+                if (position.Y < 0) { position.Y = 0; }
             }
             else if (direction.HasFlag(InputDirection.Down))
             {
                 if (CurrentState == PlayerStates.FaceRight) { CurrentState = PlayerStates.WalkRight; }
                 else if(CurrentState == PlayerStates.FaceLeft) { CurrentState = PlayerStates.WalkLeft; }
-                Y += Speed;
-                if (Y + Height > Game1.Viewport.Height) { Y = Game1.Viewport.Height - Height; }
+                //Y += Speed;
+                position.Y += Speed * LevelManager.DeltaTime;
+                if (position.Y + Height > Game1.Viewport.Height) { position.Y = Game1.Viewport.Height - Height; }
             }
 
             //If the player goes off screen on the left or right side 
             //They wrap around to the other edge
-            if (X <= 0 - widthOfSingleSprite)
+            if (position.X <= 0 - widthOfSingleSprite)
             {
-                X = Game1.Viewport.Width;
+                position.X = Game1.Viewport.Width;
             }
-            else if (X >= Game1.Viewport.Width)
+            else if (position.X >= Game1.Viewport.Width)
             {
-                X = 0 - widthOfSingleSprite;
+                position.X = 0 - widthOfSingleSprite;
             }
             UpdateAnimation(gameTime);
         }
@@ -203,11 +208,16 @@ namespace GrabMan
         }
 
         /// <summary>
-        /// Changes the frame that will be used if enough time has passed
+        /// Changes the frame that will be used if enough time has passed. Also 
+        /// Updates the position of the sprite's box to be as clsoe as possibel to the object's position
         /// </summary>
         /// <param name="gameTime">Information related to game time</param>
         private void UpdateAnimation(GameTime gameTime)
         {
+            Box = new Rectangle((int)Math.Round(position.X),
+                (int)Math.Round(position.Y),
+                Width,
+                Height);
             timeCounter += gameTime.ElapsedGameTime.TotalSeconds;
 
             /*If a 'frame' worth of time has passed the animation frame 

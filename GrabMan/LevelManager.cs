@@ -23,6 +23,12 @@ namespace GrabMan
             get { return timeLimit - timeOnStage; }
         }
 
+        /// <summary>
+        /// The amount of time that has passed since the last frame.
+        /// </summary>
+        public static float DeltaTime { get => deltaTime; }
+        private static float deltaTime;
+
         private int pearlWidth = 50; private int pearlHeight = 50;
         private List<Rectangle> pearls = new List<Rectangle>();
         private Powerup onStage; //tracks the powerUp currently "on stage"
@@ -81,13 +87,14 @@ namespace GrabMan
         /// <param name="gameOver"></param>
         public void Update(GameTime gameTime, out bool gameOver)
         {
+            deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
             CheckCollectibles();
             if(stoppedTime > 0)
             {
-                stoppedTime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+                stoppedTime -= deltaTime;
             } else 
             { 
-                timeOnStage += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                timeOnStage += deltaTime;
                 if(MediaPlayer.State == MediaState.Paused) { MediaPlayer.Resume(); }
                 else if(MediaPlayer.State != MediaState.Playing) { MediaPlayer.Play(Game1.GameMusic); }
             }
